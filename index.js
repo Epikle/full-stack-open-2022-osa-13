@@ -9,6 +9,7 @@ const usersRouter = require('./controllers/users');
 const loginRouter = require('./controllers/login');
 const authorsRouter = require('./controllers/authors');
 const readingListsRouter = require('./controllers/readingLists');
+const middlewares = require('./middlewares');
 
 const app = express();
 
@@ -20,27 +21,8 @@ app.use('/api/login', loginRouter);
 app.use('/api/authors', authorsRouter);
 app.use('/api/readinglists', readingListsRouter);
 
-app.use((_req, res) => {
-  res.sendStatus(404);
-});
-
-app.use((error, _req, res, _next) => {
-  console.error(error.message);
-
-  if (error.message.startsWith('Invalid input')) {
-    return res.status(400).json({ error: 'invalid input' });
-  } else if (error.name === 'SequelizeValidationError') {
-    return res.status(400).json({ error: error.message });
-  } else if (error.name === 'JsonWebTokenError') {
-    return res.status(401).json({ error: 'token invalid' });
-  } else if (error.message.startsWith('token missing')) {
-    return res.status(401).json({ error: 'token missing' });
-  } else if (error.message.startsWith('invalid credentials')) {
-    return res.status(401).json({ error: 'invalid credentials' });
-  }
-
-  res.sendStatus(500);
-});
+app.use(middlewares.notFound);
+app.use(middlewares.errorHandler);
 
 (async () => {
   await connectToDatabase();

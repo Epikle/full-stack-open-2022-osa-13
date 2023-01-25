@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const { Op } = require('sequelize');
 
 const { User, Blog } = require('../models');
 
@@ -16,6 +17,19 @@ router.get('/', async (_req, res) => {
 
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
+  const { read } = req.query;
+  let where = {};
+
+  if (read) {
+    if (read !== 'true' && read !== 'false') {
+      throw new Error('Invalid input');
+    }
+
+    where = {
+      read,
+    };
+  }
+
   const user = await User.findByPk(id, {
     include: [
       {
@@ -24,6 +38,7 @@ router.get('/:id', async (req, res) => {
         attributes: { exclude: ['userId'] },
         through: {
           attributes: ['read', 'id'],
+          where,
         },
       },
     ],
