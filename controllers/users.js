@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const { Op } = require('sequelize');
+const { tokenExtractor } = require('../middlewares');
 
 const { User, Blog } = require('../models');
 
@@ -49,10 +50,11 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const user = await User.create(req.body);
+
   res.json(user);
 });
 
-router.put('/:username', async (req, res) => {
+router.put('/:username', tokenExtractor, async (req, res) => {
   const { username } = req.params;
   const { name } = req.body;
 
@@ -64,7 +66,7 @@ router.put('/:username', async (req, res) => {
     },
   });
 
-  if (user) {
+  if (user && req.decodedToken.id === user.id) {
     user.name = name;
     await user.save();
 

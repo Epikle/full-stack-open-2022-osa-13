@@ -23,6 +23,10 @@ User.init(
         isEmail: true,
       },
     },
+    isActive: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
   },
   {
     sequelize,

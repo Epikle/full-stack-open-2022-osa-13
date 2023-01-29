@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 
+const { User } = require('./models');
+const Session = require('./models/session');
 const { SECRET } = require('./util/config');
 
 const notFound = (_req, res) => {
@@ -19,17 +21,27 @@ const errorHandler = (error, _req, res, _next) => {
     return res.status(401).json({ error: 'token missing' });
   } else if (error.message.startsWith('invalid credentials')) {
     return res.status(401).json({ error: 'invalid credentials' });
+  } else if (error.message.startsWith('user disabled')) {
+    return res.status(403).json({ error: 'user blocked' });
+  } else if (error.message.startsWith('old token')) {
+    return res.status(403).json({ error: 'token invalid' });
   }
 
   res.sendStatus(500);
 };
 
-const tokenExtractor = (req, _res, next) => {
+const tokenExtractor = async (req, _res, next) => {
   const authorization = req.get('authorization');
 
   if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
-    console.log(authorization.substring(7));
-    req.decodedToken = jwt.verify(authorization.substring(7), SECRET);
+    const token = authorization.substring(7);
+    console.log(token);
+    req.decodedToken = jwt.verify(token, SECRET);
+
+    const user = await User.findByPk(req.decodedToken.id);
+    if (!user.isActive) throw new Error('user disabled');
+    const session = await Session.findByPk(req.decodedToken.id);
+    if (session?.token !== token) throw new Error('old token');
   } else {
     throw new Error('token missing');
   }
